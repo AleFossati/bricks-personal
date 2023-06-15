@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROD - Status Screen</title>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+  <div
+    id="brick_container"
+    style="
+      font-family: Arial;
+      width: 500px;">
+  </div>
+
+  <script>
+    const mp = new MercadoPago("PUBLIC_KEY");
+
+    const bricksBuilder = mp.bricks();
+    const renderCardPaymentBrick = async(bricksBuilder) => { 
+      const settings = {
+        initialization: { 
+          paymentId: '1311286236'
+        }, 
+        callbacks: { 
+          onReady: () => {
+            console.log('Bricks READY');
+          }, 
+          onError: (error) => {
+            console.error(error)
+            alert('Bricks ERROR, details in console')
+          },
+        },
+      }; 
+      
+      const cardPaymentBrickController = await bricksBuilder.create('statusScreen', 'brick_container', settings);
+    }; 
+    renderCardPaymentBrick(bricksBuilder);
+  </script>
+</body>
+</html>

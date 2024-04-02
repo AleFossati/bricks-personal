@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,10 +8,9 @@
   <title>PROD - Card Payment</title>
   <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
+
 <body>
-  <div
-    id="cardPaymentBrick_container"
-    style="
+  <div id="cardPaymentBrick_container" style="
       font-family: Arial;
       width: 500px;">
   </div>
@@ -19,42 +19,43 @@
     const mp = new MercadoPago("PUBLIC_KEY");
 
     const bricksBuilder = mp.bricks();
-    const renderCardPaymentBrick = async(bricksBuilder) => { 
+    const renderCardPaymentBrick = async (bricksBuilder) => {
       const settings = {
-        initialization: { 
+        initialization: {
           amount: 10000,
-        }, 
-        callbacks: { 
+        },
+        callbacks: {
           onReady: () => {
             console.log('Bricks READY');
-          }, 
+          },
           onSubmit: (cardFormData) => {
-            return new Promise((resolve, reject) => { 
+            return new Promise((resolve, reject) => {
               fetch("/process_payment", {
-                method: "POST", 
-                headers: { 
+                method: "POST",
+                headers: {
                   "Content-Type": "application/json",
-                }, 
+                },
                 body: JSON.stringify(cardFormData)
               })
-                .then((response) => {                  
+                .then((response) => {
                   resolve(true);
                 })
                 .catch((error) => {
                   reject(false);
                 })
             });
-          }, 
+          },
           onError: (error) => {
             console.error(error)
             alert('Bricks ERROR, details in console')
           },
         },
-      }; 
-      
+      };
+
       const cardPaymentBrickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
-    }; 
+    };
     renderCardPaymentBrick(bricksBuilder);
   </script>
 </body>
+
 </html>

@@ -1,56 +1,55 @@
-const express = require('express')
-const favicon = require('serve-favicon')
-const path = require('path')
-const bodyParser = require('body-parser')
-const { MercadoPagoConfig, Payment } = require('mercadopago');
+const express = require("express");
+const favicon = require("serve-favicon");
+const path = require("path");
+const bodyParser = require("body-parser");
+const { MercadoPagoConfig, Payment } = require("mercadopago");
 
-const client = new MercadoPagoConfig({ accessToken: 'ACCESS_TOKEN'});
+const client = new MercadoPagoConfig({ accessToken: "ACCESS_TOKEN" });
 const payment = new Payment(client);
 
-const PORT = 3001
-const app = express()
-app.use(express.json())
-app.use(bodyParser.urlencoded({extended: true}))
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
+const PORT = 3001;
+const app = express();
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(favicon(path.join(__dirname, "public", "favicon.ico")));
 
-app.get('/', (req, res) => {
-  res.send(`bricks prod is on`)
-})
+app.get("/", (req, res) => {
+  res.send(`bricks prod is on`);
+});
 
-app.get('/:fileName', (req, res) => {
+app.get("/:fileName", (req, res) => {
   try {
-    return res.sendFile(path.join(__dirname, `/public/${req.params.fileName}`))
+    return res.sendFile(path.join(__dirname, `/public/${req.params.fileName}`));
+  } catch (e) {
+    return res.status(500).json({ e });
   }
-  catch(e) {
-    return res.status(500).json({e})
-  }
-})
+});
 
-app.post('/process_payment', async (req, res) => {
-  const formData = 'formData' in req.body ? req.body.formData : req.body;
+app.post("/process_payment", async (req, res) => {
+  const formData = "formData" in req.body ? req.body.formData : req.body;
 
   if (!formData) {
-    res.status(400).send('Invalid formData at body', req.body)
+    res.status(400).send("Invalid formData at body", req.body);
     return;
   }
 
-  if (formData.payment_method_id === 'pse') {
-    formData.description = 'white t-shirt'
+  if (formData.payment_method_id === "pse") {
+    formData.description = "white t-shirt";
     formData.additional_info = {
       // ip_address randomly generated
-      ip_address: '177.59.165.145'
-    }
-    formData.callback_url = 'https://google.com'
+      ip_address: "177.59.165.145",
+    };
+    formData.callback_url = "https://google.com";
   }
 
   try {
-    const paymentResponse = await payment.create({ body: formData })
-    res.status(201).json(paymentResponse)
-  } catch(err) {
-    res.status(err.status).json({err})
+    const paymentResponse = await payment.create({ body: formData });
+    res.status(201).json(paymentResponse);
+  } catch (err) {
+    res.status(err.status).json({ err });
   }
-})
+});
 
 app.listen(PORT, () => {
-  console.log(`Bricks PROD listening on http://localhost:${PORT}`)
-})
+  console.log(`Bricks PROD listening on http://localhost:${PORT}`);
+});

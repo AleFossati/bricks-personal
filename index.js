@@ -2,9 +2,10 @@ const express = require('express')
 const favicon = require('serve-favicon')
 const path = require('path')
 const bodyParser = require('body-parser')
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Payment } = require('mercadopago');
 
-mercadopago.configurations.setAccessToken("ACCESS_TOKEN");
+const client = new MercadoPagoConfig({ accessToken: 'ACCESS_TOKEN'});
+const payment = new Payment(client);
 
 const PORT = 3001
 const app = express()
@@ -25,14 +26,30 @@ app.get('/:fileName', (req, res) => {
   }
 })
 
-app.post('/process_payment', (req, res) => {
-  mercadopago.payment.create(req.body)
-    .then(function (data) {
-      res.status(201).json(data)
-    })
-    .catch(function (error) {
-      res.status(error.status).json({error})
-    });
+app.post('/process_payment', async (req, res) => {
+  const formData = 'formData' in req.body ? req.body.formData : req.body;
+
+  if (formData) {
+    if (formData.payment_method_id === 'pse') {
+      formData.description = 'white t-shirt'
+      formData.additional_info = {
+        // ip_address randomly generated
+        ip_address: '177.59.165.145'
+      }
+      formData.callback_url = 'https://google.com'
+    }
+
+    try {
+      const paymentResponse = await payment.create({ body: formData })
+      res.status(201).json(paymentResponse)
+    } catch(err) {
+      res.status(err.status).json({err})
+    }
+
+    return;
+  }
+
+  res.status(400).send('Invalid formData at body', req.body)
 })
 
 app.listen(PORT, () => {

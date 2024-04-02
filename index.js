@@ -29,27 +29,26 @@ app.get('/:fileName', (req, res) => {
 app.post('/process_payment', async (req, res) => {
   const formData = 'formData' in req.body ? req.body.formData : req.body;
 
-  if (formData) {
-    if (formData.payment_method_id === 'pse') {
-      formData.description = 'white t-shirt'
-      formData.additional_info = {
-        // ip_address randomly generated
-        ip_address: '177.59.165.145'
-      }
-      formData.callback_url = 'https://google.com'
-    }
-
-    try {
-      const paymentResponse = await payment.create({ body: formData })
-      res.status(201).json(paymentResponse)
-    } catch(err) {
-      res.status(err.status).json({err})
-    }
-
+  if (!formData) {
+    res.status(400).send('Invalid formData at body', req.body)
     return;
   }
 
-  res.status(400).send('Invalid formData at body', req.body)
+  if (formData.payment_method_id === 'pse') {
+    formData.description = 'white t-shirt'
+    formData.additional_info = {
+      // ip_address randomly generated
+      ip_address: '177.59.165.145'
+    }
+    formData.callback_url = 'https://google.com'
+  }
+
+  try {
+    const paymentResponse = await payment.create({ body: formData })
+    res.status(201).json(paymentResponse)
+  } catch(err) {
+    res.status(err.status).json({err})
+  }
 })
 
 app.listen(PORT, () => {

@@ -32,11 +32,14 @@
             </div>
         </div>
 
-        <button id="initBtn" onclick="initAuthenticator()">Initialize Authenticator</button>
-        <button id="loadBtn" onclick="loadSupertoken()" disabled>Load Supertoken</button>
+        <button id="initBtn" onclick="start()">Start</button>
     </div>
 
     <div class="container">
+        <div id="loadingSpinner" class="spinner-container" style="display: none;">
+            <div class="spinner"></div>
+            <span>Processing...</span>
+        </div>
         <div id="paymentBrick_container"></div>
     </div>
 
@@ -85,14 +88,39 @@
             const container = document.getElementById('logsContainer');
             if (!container) return;
 
-            container.innerHTML = logs.map(log =>
-                `<div class="log-entry log-${log.type}">
+            container.innerHTML = logs.map((log, index) =>
+                `<div class="log-entry log-${log.type}" data-index="${index}" onclick="copyLogToClipboard(${index})" title="Click to copy">
                     <span class="log-time">[${log.timestamp}]</span>
                     <span class="log-message">${log.message}</span>
                 </div>`
             ).join('');
 
             container.scrollTop = container.scrollHeight;
+        }
+
+        async function copyLogToClipboard(index) {
+            const log = logs[index];
+            const logText = `[${log.timestamp}] ${log.message}`;
+
+            try {
+                await navigator.clipboard.writeText(logText);
+
+                const logElement = document.querySelector(`[data-index="${index}"]`);
+                const originalTitle = logElement.title;
+
+                logElement.title = 'Copied to clipboard!';
+                logElement.style.backgroundColor = '#28a745';
+                logElement.style.color = 'white';
+
+                setTimeout(() => {
+                    logElement.title = originalTitle || 'Click to copy';
+                    logElement.style.backgroundColor = '';
+                    logElement.style.color = '';
+                }, 1000);
+
+            } catch (error) {
+                addLog(`Failed to copy to clipboard: ${error.message}`, 'error');
+            }
         }
 
         function openLogsDialog() {
@@ -135,11 +163,9 @@
 
                 addLog(`Authenticator initialized successfully! Amount: $${amount}, Email: ${email}`, 'success');
 
-                document.getElementById('loadBtn').disabled = false;
-                document.getElementById('initBtn').disabled = true;
-
             } catch (error) {
                 addLog(`Authenticator initialization failed: ${error.message}`, 'error');
+                throw error;
             }
         }
 
@@ -150,6 +176,7 @@
 
             } catch (error) {
                 addLog(`Supertoken generation failed: ${error.message}`, 'error');
+                throw error;
             }
         }
 
@@ -163,7 +190,8 @@
                         addLog('Bricks is ready', 'info');
                     },
                     onSubmit: (data, additionalData) => {
-                        addLog(`Bricks submit: ${JSON.stringify(data)}`, 'info');
+                        addLog(`Bricks submit data: ${JSON.stringify(data)}`, 'info');
+                        addLog(`Bricks submit additionalData: ${JSON.stringify(additionalData)}`, 'info');
                     },
                     onError: (error) => {
                         addLog(`Bricks error: ${error.message}`, 'error');
@@ -172,10 +200,36 @@
             }
 
             try {
+                if (brickController) {
+                    brickController.unmount();
+                }
                 brickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
                 addLog('Payment brick created successfully', 'success');
             } catch (error) {
                 addLog(`Payment brick creation failed: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function start() {
+            const button = document.getElementById('initBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            const brickContainer = document.getElementById('paymentBrick_container');
+
+            button.disabled = true;
+            spinner.style.display = 'flex';
+            brickContainer.innerHTML = '';
+
+            try {
+                await initAuthenticator();
+                await loadSupertoken();
+                await renderPaymentBrick();
+                addLog('Process completed successfully!', 'success');
+            } catch (error) {
+                addLog('Start failed, see previous logs', 'error');
+            } finally {
+                button.disabled = false;
+                spinner.style.display = 'none';
             }
         }
 

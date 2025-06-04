@@ -10,7 +10,10 @@
 
 <body>
     <div class="container">
-        <h3>Checkout Bricks - Supertoken</h3>
+        <div class="header">
+            <h3>Checkout Bricks - Supertoken</h3>
+            <button class="logs-btn" onclick="openLogsDialog()">View Logs</button>
+        </div>
 
         <div class="form-group">
             <label for="publicKey">Public Key:</label>
@@ -37,6 +40,21 @@
         <div id="paymentBrick_container"></div>
     </div>
 
+    <div id="logsDialog" class="dialog">
+        <div class="dialog-content">
+            <div class="dialog-header">
+                <h4>Application Logs</h4>
+                <button class="close-btn" onclick="closeLogsDialog()">&times;</button>
+            </div>
+            <div class="dialog-body">
+                <div class="logs-actions">
+                    <button onclick="clearLogs()">Clear Logs</button>
+                </div>
+                <div id="logsContainer" class="logs-container"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://beta-sdk.mercadopago.com/gama/js/v2"></script>
     <script>
         let mp = null;
@@ -44,6 +62,52 @@
         let supertoken = null;
         let bricksBuilder = null;
         let brickController = null;
+        let logs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({
+                timestamp,
+                message,
+                type
+            });
+
+            if (type === 'error') {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+
+            updateLogsDisplay();
+        }
+
+        function updateLogsDisplay() {
+            const container = document.getElementById('logsContainer');
+            if (!container) return;
+
+            container.innerHTML = logs.map(log =>
+                `<div class="log-entry log-${log.type}">
+                    <span class="log-time">[${log.timestamp}]</span>
+                    <span class="log-message">${log.message}</span>
+                </div>`
+            ).join('');
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function openLogsDialog() {
+            document.getElementById('logsDialog').style.display = 'flex';
+            updateLogsDisplay();
+        }
+
+        function closeLogsDialog() {
+            document.getElementById('logsDialog').style.display = 'none';
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogsDisplay();
+        }
 
         async function initAuthenticator() {
             const publicKey = document.getElementById('publicKey').value.trim();
@@ -69,23 +133,23 @@
                 bricksBuilder = bricksBuilder ? bricksBuilder : mp.bricks();
                 authenticator = await mp.authenticator(amount, email);
 
-                console.log(`Authenticator initialized successfully!\nAmount: $${amount}\nEmail: ${email}`);
+                addLog(`Authenticator initialized successfully! Amount: $${amount}, Email: ${email}`, 'success');
 
                 document.getElementById('loadBtn').disabled = false;
                 document.getElementById('initBtn').disabled = true;
 
             } catch (error) {
-                console.error('Authenticator initialization failed:', error);
+                addLog(`Authenticator initialization failed: ${error.message}`, 'error');
             }
         }
 
         async function loadSupertoken() {
             try {
                 supertoken = await authenticator.show();
-                console.log(`Supertoken generated successfully!\n\nToken: ${supertoken}`);
+                addLog(`Supertoken generated successfully! Token: ${supertoken}`, 'success');
 
             } catch (error) {
-                console.error('Supertoken generation failed:', error);
+                addLog(`Supertoken generation failed: ${error.message}`, 'error');
             }
         }
 
@@ -96,21 +160,22 @@
                 },
                 callbacks: {
                     onReady: () => {
-                        console.log('Bricks is ready');
+                        addLog('Bricks is ready', 'info');
                     },
                     onSubmit: (data, additionalData) => {
-                        console.log('Bricks submit', data, additionalData);
+                        addLog(`Bricks submit: ${JSON.stringify(data)}`, 'info');
                     },
                     onError: (error) => {
-                        console.error(error)
+                        addLog(`Bricks error: ${error.message}`, 'error');
                     },
                 },
             }
 
             try {
                 brickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+                addLog('Payment brick created successfully', 'success');
             } catch (error) {
-                console.error('Payment brick creation failed:', error);
+                addLog(`Payment brick creation failed: ${error.message}`, 'error');
             }
         }
 
@@ -123,6 +188,14 @@
             mp = null;
             authenticator = null;
             supertoken = null;
+            addLog('Form reset', 'info');
+        }
+
+        window.onclick = function (event) {
+            const dialog = document.getElementById('logsDialog');
+            if (event.target == dialog) {
+                closeLogsDialog();
+            }
         }
     </script>
 </body>

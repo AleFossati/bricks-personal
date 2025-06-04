@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supertoken</title>
+    <link rel="stylesheet" href="supertoken.css">
+</head>
+
+<body>
+    <div class="container">
+        <h3>Checkout Bricks - Supertoken</h3>
+
+        <div class="form-group">
+            <label for="publicKey">Public Key:</label>
+            <input type="text" id="publicKey" value="APP_USR-1a65da8c-993a-4cff-9244-1f841e7c2ea9">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group form-group-email">
+                <label for="email">User Email:</label>
+                <input type="email" id="email" value="test_user_708016305@testuser.com">
+            </div>
+
+            <div class="form-group form-group-amount">
+                <label for="amount">Amount:</label>
+                <input type="text" id="amount" value="300.00">
+            </div>
+        </div>
+
+        <button id="initBtn" onclick="initAuthenticator()">Initialize Authenticator</button>
+        <button id="loadBtn" onclick="loadSupertoken()" disabled>Load Supertoken</button>
+    </div>
+
+    <div class="container">
+        <div id="paymentBrick_container"></div>
+    </div>
+
+    <script src="https://beta-sdk.mercadopago.com/gama/js/v2"></script>
+    <script>
+        let mp = null;
+        let authenticator = null;
+        let supertoken = null;
+        let bricksBuilder = null;
+        let brickController = null;
+
+        async function initAuthenticator() {
+            const publicKey = document.getElementById('publicKey').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const amount = document.getElementById('amount').value.trim();
+
+            if (!publicKey) {
+                alert('Please enter the public key.');
+                return;
+            }
+            if (!email) {
+                alert('Please enter a valid email.');
+                return;
+            }
+            if (!amount) {
+                alert('Please enter the amount.');
+                return;
+            }
+
+            try {
+                mp = new MercadoPago(publicKey);
+
+                bricksBuilder = bricksBuilder ? bricksBuilder : mp.bricks();
+                authenticator = await mp.authenticator(amount, email);
+
+                console.log(`Authenticator initialized successfully!\nAmount: $${amount}\nEmail: ${email}`);
+
+                document.getElementById('loadBtn').disabled = false;
+                document.getElementById('initBtn').disabled = true;
+
+            } catch (error) {
+                console.error('Authenticator initialization failed:', error);
+            }
+        }
+
+        async function loadSupertoken() {
+            try {
+                supertoken = await authenticator.show();
+                console.log(`Supertoken generated successfully!\n\nToken: ${supertoken}`);
+
+            } catch (error) {
+                console.error('Supertoken generation failed:', error);
+            }
+        }
+
+        async function renderPaymentBrick() {
+            const settings = {
+                initialization: {
+                    supertoken: supertoken,
+                },
+                callbacks: {
+                    onReady: () => {
+                        console.log('Bricks is ready');
+                    },
+                    onSubmit: (data, additionalData) => {
+                        console.log('Bricks submit', data, additionalData);
+                    },
+                    onError: (error) => {
+                        console.error(error)
+                    },
+                },
+            }
+
+            try {
+                brickController = await bricksBuilder.create('payment', 'paymentBrick_container', settings);
+            } catch (error) {
+                console.error('Payment brick creation failed:', error);
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('publicKey').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('initBtn').disabled = false;
+            document.getElementById('loadBtn').disabled = true;
+            mp = null;
+            authenticator = null;
+            supertoken = null;
+        }
+    </script>
+</body>
+
+</html>

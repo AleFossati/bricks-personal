@@ -62,7 +62,7 @@
     <script>
         let mp = null;
         let authenticator = null;
-        let supertoken = null;
+        let fastPaymentToken = null;
         let bricksBuilder = null;
         let brickController = null;
         let logs = [];
@@ -171,8 +171,8 @@
 
         async function loadSupertoken() {
             try {
-                supertoken = await authenticator.show();
-                addLog(`Supertoken generated successfully! Token: ${supertoken}`, 'success');
+                fastPaymentToken = await authenticator.show();
+                addLog(`Supertoken generated successfully! Token: ${fastPaymentToken}`, 'success');
 
             } catch (error) {
                 addLog(`Supertoken generation failed: ${error.message}`, 'error');
@@ -183,7 +183,7 @@
         async function renderPaymentBrick() {
             const settings = {
                 initialization: {
-                    supertoken: supertoken,
+                    fastPaymentToken: fastPaymentToken,
                 },
                 callbacks: {
                     onReady: () => {
@@ -241,7 +241,7 @@
             document.getElementById('loadBtn').disabled = true;
             mp = null;
             authenticator = null;
-            supertoken = null;
+            fastPaymentToken = null;
             addLog('Form reset', 'info');
         }
 
